@@ -3,7 +3,29 @@ title: "R Notebook"
 output: github_document
 ---
 
+Permet d'avoir un fichier propre
 ```{r}
-metadata <- read.csv2("/home/rstudio/article_ADM/data/SraRunTable.csv", header = TRUE, sep = ",")
+# Lire brut
+raw <- readLines("/home/rstudio/article_ADM/data/SraRunTable.csv")
+
+# 1. Supprimer les guillemets de début et de fin de ligne
+raw <- gsub('^"|"$', "", raw)
+
+# 2. Remplacer les doubles guillemets "" par un seul "
+raw <- gsub('""', '"', raw)
+
+# Sauver un fichier propre
+writeLines(raw, "/home/rstudio/article_ADM/data/SraRunTable_clean.csv")
+
+# Relire avec R
+metadata <- read.csv("/home/rstudio/article_ADM/data/SraRunTable_clean.csv", sep = ",", header = TRUE, quote = "\"")
+
+```
+
+
+
+Ligne de code originelle, mais ne sépare pas les lignes dans les colonnes
+```{r}
+#metadata <- read.csv2("/home/rstudio/article_ADM/data/SraRunTable.csv", header = TRUE, sep = ",", quote = "")
 ```
 
