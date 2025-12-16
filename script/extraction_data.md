@@ -5,7 +5,7 @@ Permet d’avoir un fichier propre
 
 ``` r
 # Lire brut
-raw <- readLines("/home/rstudio/article_ADM/data/SraRunTable.csv")
+raw <- readLines("/home/rstudio/article_ADM/data/SraRunTable (2).csv")
 
 # 1. Supprimer les guillemets de début et de fin de ligne
 raw <- gsub('^"|"$', "", raw)
