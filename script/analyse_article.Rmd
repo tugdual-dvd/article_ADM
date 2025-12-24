@@ -1,0 +1,276 @@
+---
+title: "analyse_article"
+output: html_document
+date: "2025-12-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, cache=TRUE}
+library(dada2); packageVersion("dada2")
+
+```
+```{r, cache=TRUE}
+# Lire brut
+raw <- readLines("/home/rstudio/article_ADM/SraRunTable (2).csv")
+
+# 1. Supprimer les guillemets de début et de fin de ligne
+raw <- gsub('^"|"$', "", raw)
+
+# 2. Remplacer les doubles guillemets "" par un seul "
+raw <- gsub('""', '"', raw)
+
+# Sauver un fichier propre
+writeLines(raw, "/home/rstudio/article_ADM/SraRunTable_clean.csv")
+
+# Relire avec R
+samdf <- read.csv("/home/rstudio/article_ADM/SraRunTable_clean.csv", sep = ",", header = TRUE, quote = "\"", stringsAsFactors = FALSE)
+
+```
+```{r, cache=TRUE}
+path <- "~/article_ADM/data" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+```
+```{r, cache=TRUE}
+# List forward and reverse reads
+fnFs <- sort(list.files(path, pattern = "_1\\.fastq\\.gz$", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern = "_2\\.fastq\\.gz$", full.names = TRUE))
+
+# Extract sample names
+sample.names <- sub("_1\\.fastq\\.gz$", "", basename(fnFs))
+
+```
+
+```{r, cache=TRUE}
+plotQualityProfile(fnFs[1:2])
+```
+```{r, cache=TRUE}
+plotQualityProfile(fnRs[1:2])
+```
+
+```{r, cache=TRUE}
+# Create filtered directory if it doesn't exist
+filt_path <- file.path(path, "filtered")
+dir.create(filt_path, showWarnings = FALSE)
+
+# Define filtered file names
+filtFs <- file.path(filt_path, paste0(sample.names, "_1_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_2_filt.fastq.gz"))
+
+# Name the vectors (important for DADA2)
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+```
+```{r, cache=TRUE}
+head(fnFs)
+head(filtFs)
+
+```
+
+```{r, cache=TRUE}
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+              compress=TRUE, multithread=FALSE) # On Windows set multithread=FALSE (only needed for filterAndTrim)
+head(out)
+```
+```{r,cache=TRUE}
+errF <- learnErrors(filtFs, multithread=TRUE)
+```
+```{r,cache=TRUE}
+errR <- learnErrors(filtRs, multithread=TRUE)
+```
+```{r, cache=TRUE}
+plotErrors(errF, nominalQ=TRUE)
+```
+```{r, cache=TRUE}
+dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+```
+```{r, cache=TRUE}
+dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+```
+```{r, cache=TRUE}
+dadaFs[[1]]
+```
+
+```{r, cache=TRUE}
+mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+# Inspect the merger data.frame from the first sample
+head(mergers[[1]])
+```
+```{r, cache=TRUE}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+```
+```{r, cache=TRUE}
+# Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+```{r, cache=TRUE}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+dim(seqtab.nochim)
+```
+
+```{r, cache=TRUE}
+sum(seqtab.nochim)/sum(seqtab)
+```
+```{r, cache=TRUE}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+head(track)
+```
+```{r, cache=TRUE}
+taxa <- assignTaxonomy(seqtab.nochim, "~/article_ADM/data/silva_nr99_v138.2_toGenus_trainset.fa.gz?download=1", multithread=TRUE)
+```
+
+```{r, cache=TRUE}
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+```{r, cache=TRUE}
+library(phyloseq); packageVersion("phyloseq")
+```
+```{r, cache=TRUE}
+library(Biostrings); packageVersion("Biostrings")
+```
+```{r, cache=TRUE}
+library(ggplot2); packageVersion("ggplot2")
+```
+```{r, cache=TRUE}
+theme_set(theme_bw())
+```
+```{r cache=TRUE}
+rownames(samdf) <- samdf$Run
+
+
+length(rownames(seqtab.nochim))
+length(rownames(samdf))
+common.samples <- intersect(rownames(seqtab.nochim), rownames(samdf))
+length(common.samples)
+seqtab.nochim <- seqtab.nochim[common.samples, , drop = FALSE]
+samdf <- samdf[common.samples, , drop = FALSE]
+
+```
+
+```{r, cache=TRUE}
+# Check sample name matching
+all(rownames(seqtab.nochim) %in% rownames(samdf))
+all(rownames(samdf) %in% rownames(seqtab.nochim))
+```
+
+
+```{r, cache=TRUE}
+library(phyloseq)
+
+ps <- phyloseq(
+  otu_table(seqtab.nochim, taxa_are_rows = FALSE),
+  sample_data(samdf),
+  tax_table(taxa)
+)
+
+```
+
+```{r, cache=TRUE}
+dna <- Biostrings::DNAStringSet(taxa_names(ps))
+names(dna) <- taxa_names(ps)
+ps <- merge_phyloseq(ps, dna)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+ps
+```
+```{r, cache=TRUE}
+samdf$SampleGroup <- ifelse(grepl("^16", samdf$Sample.Name), "Week 16",
+                       ifelse(grepl("^8",  samdf$Sample.Name), "Week 8",
+                       ifelse(grepl("^SA", samdf$Sample.Name), "Sediment",
+                              "Other")))
+sample_data(ps) <- samdf
+```
+
+
+
+```{r, cache=TRUE}
+plot_richness(ps, measures=c("Shannon", "Simpson"), color="SampleGroup")
+
+```
+
+```{r, cache=TRUE}
+# Transform data to proportions as appropriate for Bray-Curtis distances
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+```
+```{r, cache=TRUE}
+plot_ordination(ps.prop, ord.nmds.bray, color="SampleGroup", title="Bray NMDS")
+```
+```{r, cache=TRUE}
+library(phyloseq)
+library(ggplot2)
+# Identify top 20 taxa by total abundance
+top20 <- names(sort(taxa_sums(ps), decreasing = TRUE))[1:20]
+
+# Transform to relative abundance
+ps.prop <- transform_sample_counts(ps, function(x) x / sum(x))
+
+# Keep only top 20 taxa
+ps.top20 <- prune_taxa(top20, ps.prop)
+
+# Bar plot: samples on x-axis, taxa as fill, faceted by SampleGroup
+plot_bar(ps.top20, x = "Run", fill = "Family") +
+  facet_wrap(~SampleGroup, scales = "free_x") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    strip.background = element_rect(fill = "grey90")
+  )
+
+
+```
+```{r, cache=TRUE}
+library("phyloseq")
+packageVersion("phyloseq")
+
+library("ggplot2")
+packageVersion("ggplot2")
+
+library("scales")
+packageVersion("scales")
+
+library("grid")
+packageVersion("grid")
+```
+```{r, cache=TRUE}
+vignette("phyloseq-basics")
+vignette("phyloseq-analysis")
+```
+
+```{r, cache=TRUE}
+otufile = system.file("extdata", "GP_otu_table_rand_short.txt.gz", package = "phyloseq")
+mapfile = system.file("extdata", "master_map.txt", package = "phyloseq")
+trefile = system.file("extdata", "GP_tree_rand_short.newick.gz", package = "phyloseq")
+qiimex = import_qiime(otufile, mapfile, trefile, showProgress = FALSE)
+```
+```{r, cache=TRUE}
+qiimex
+```
+
+```{r, cache=TRUE}
+mothlist = system.file("extdata", "esophagus.fn.list.gz", package = "phyloseq")
+mothgroup = system.file("extdata", "esophagus.good.groups.gz", package = "phyloseq")
+mothtree = system.file("extdata", "esophagus.tree.gz", package = "phyloseq")
+cutoff = "0.10"
+esophman = import_mothur(mothlist, mothgroup, mothtree, cutoff)
+print(esophman)
+```
+```{r, cache=TRUE}
+ntaxa(esophman)
+```
+```{r, cache=TRUE}
+data(esophagus)
+identical(esophagus, esophman)
+```
+

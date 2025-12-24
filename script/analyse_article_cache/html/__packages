@@ -1,0 +1,11 @@
+Rcpp
+dada2
+phyloseq
+BiocGenerics
+S4Vectors
+IRanges
+XVector
+GenomeInfoDb
+Biostrings
+ggplot2
+scales
