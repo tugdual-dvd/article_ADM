@@ -6,9 +6,20 @@ analyse_article
 library(dada2); packageVersion("dada2")
 ```
 
-    ## Loading required package: Rcpp
-
     ## [1] '1.28.0'
+
+``` r
+library(phangorn)
+```
+
+    ## Loading required package: ape
+
+    ## 
+    ## Attaching package: 'ape'
+
+    ## The following object is masked from 'package:Biostrings':
+    ## 
+    ##     complement
 
 ``` r
 # Lire brut
@@ -737,20 +748,6 @@ ps <- phyloseq(
 ```
 
 ``` r
-dna <- Biostrings::DNAStringSet(taxa_names(ps))
-names(dna) <- taxa_names(ps)
-ps <- merge_phyloseq(ps, dna)
-taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
-ps
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 10006 taxa and 59 samples ]
-    ## sample_data() Sample Data:       [ 59 samples by 39 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 10006 taxa by 6 taxonomic ranks ]
-    ## refseq()      DNAStringSet:      [ 10006 reference sequences ]
-
-``` r
 samdf$SampleGroup <- ifelse(grepl("^16", samdf$Sample.Name), "Week 16",
                        ifelse(grepl("^8",  samdf$Sample.Name), "Week 8",
                        ifelse(grepl("^SA", samdf$Sample.Name), "Sediment",
@@ -771,7 +768,7 @@ plot_richness(ps, measures=c("Shannon", "Simpson"), color="SampleGroup")
     ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
     ## generated.
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](analyse_article_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 # Transform data to proportions as appropriate for Bray-Curtis distances
@@ -819,7 +816,7 @@ ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 plot_ordination(ps.prop, ord.nmds.bray, color="SampleGroup", title="Bray NMDS")
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](analyse_article_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 library(phyloseq)
@@ -843,7 +840,7 @@ plot_bar(ps.top20, x = "Run", fill = "Family") +
   )
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](analyse_article_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 library("phyloseq")
@@ -894,57 +891,178 @@ vignette("phyloseq-analysis")
 ```
 
 ``` r
-otufile = system.file("extdata", "GP_otu_table_rand_short.txt.gz", package = "phyloseq")
-mapfile = system.file("extdata", "master_map.txt", package = "phyloseq")
-trefile = system.file("extdata", "GP_tree_rand_short.newick.gz", package = "phyloseq")
-qiimex = import_qiime(otufile, mapfile, trefile, showProgress = FALSE)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
 ```
-
-    ## Processing map file...
-    ## Processing otu/tax file...
-    ## Reading file into memory prior to parsing...
-    ## Detecting first header line...
-    ## Header is on line 2  
-    ## Converting input file to a table...
-    ## Defining OTU table... 
-    ## Parsing taxonomy table...
-    ## Processing phylogenetic tree...
-    ##  /usr/local/lib/R/site-library/phyloseq/extdata/GP_tree_rand_short.newick.gz ...
-
-    ## Warning in import_qiime(otufile, mapfile, trefile, showProgress = FALSE):
-    ## treefilename failed import. It will not be included.
 
 ``` r
-qiimex
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+
+ord.pcoa <- ordinate(ps.rel, method = "PCoA", distance = "bray")
+
+
+plot_ordination(ps.rel, ord.pcoa, color = "SampleGroup") +
+  geom_point(size = 2) +
+  stat_ellipse() +
+  ggtitle("PCoA - Bray-Curtis")
 ```
 
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 500 taxa and 26 samples ]
-    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 500 taxa by 7 taxonomic ranks ]
+    ## Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
+    ## ℹ Please use tidy evaluation idioms with `aes()`.
+    ## ℹ See also `vignette("ggplot2-in-packages")` for more information.
+    ## ℹ The deprecated feature was likely used in the phyloseq package.
+    ##   Please report the issue at <https://github.com/joey711/phyloseq/issues>.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+    ## Warning in MASS::cov.trob(data[, vars], wt = weight * nrow(data)): Probable
+    ## convergence failure
+
+![](analyse_article_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 ``` r
-mothlist = system.file("extdata", "esophagus.fn.list.gz", package = "phyloseq")
-mothgroup = system.file("extdata", "esophagus.good.groups.gz", package = "phyloseq")
-mothtree = system.file("extdata", "esophagus.tree.gz", package = "phyloseq")
-cutoff = "0.10"
-esophman = import_mothur(mothlist, mothgroup, mothtree, cutoff)
-print(esophman)
+library(vegan)
 ```
 
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 591 taxa and 3 samples ]
-    ## phy_tree()    Phylogenetic Tree: [ 591 tips and 590 internal nodes ]
+    ## Loading required package: permute
+
+    ## 
+    ## Attaching package: 'vegan'
+
+    ## The following objects are masked from 'package:phangorn':
+    ## 
+    ##     diversity, treedist
 
 ``` r
-ntaxa(esophman)
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+dist.bray <- phyloseq::distance(ps.rel, method = "bray")
 ```
-
-    ## [1] 591
 
 ``` r
-data(esophagus)
-identical(esophagus, esophman)
+meta <- as(sample_data(ps.rel), "data.frame")
+
+adonis2(dist.bray ~ SampleGroup, data = meta, permutations = 999)
 ```
 
-    ## [1] FALSE
+    ## Permutation test for adonis under reduced model
+    ## Permutation: free
+    ## Number of permutations: 999
+    ## 
+    ## adonis2(formula = dist.bray ~ SampleGroup, data = meta, permutations = 999)
+    ##          Df SumOfSqs      R2      F Pr(>F)    
+    ## Model     2   7.0061 0.42314 20.539  0.001 ***
+    ## Residual 56   9.5512 0.57686                  
+    ## Total    58  16.5573 1.00000                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+bd <- betadisper(dist.bray, meta$SampleGroup)
+anova(bd)
+```
+
+    ## Analysis of Variance Table
+    ## 
+    ## Response: Distances
+    ##           Df  Sum Sq  Mean Sq F value  Pr(>F)  
+    ## Groups     2 0.13941 0.069707  4.3215 0.01798 *
+    ## Residuals 56 0.90331 0.016131                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+PERMANOVA revealed a significant effect of SampleGroup on microbial
+community composition (Bray–Curtis, R² = 0.42, p = 0.001). However,
+multivariate dispersion differed significantly among groups (betadisper,
+p = 0.018), indicating that group differences may partly reflect
+heterogeneity in within-group variability.
+
+``` r
+boxplot(bd, xlab = "SampleGroup", ylab = "Distance to centroid")
+```
+
+![](analyse_article_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+
+``` r
+ps.family <- tax_glom(ps.rel, taxrank = "Family")
+top_fam <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:10]
+ps.family.top <- prune_taxa(top_fam, ps.family)
+```
+
+``` r
+site_df <- as.data.frame(ord.pcoa$vectors[, 1:2])
+colnames(site_df) <- c("PCoA1", "PCoA2")
+site_df$SampleGroup <- sample_data(ps.rel)$SampleGroup
+```
+
+``` r
+taxa_mat <- t(as(otu_table(ps.family.top), "matrix"))
+```
+
+``` r
+plot_heatmap(ps.family.top,
+             sample.label = "SampleGroup",
+             taxa.label = "Family",
+             low = "white",
+             high = "red")
+```
+
+    ## Warning in scale_fill_gradient(low = low, high = high, trans = trans, na.value
+    ## = na.value): log-4 transformation introduced infinite values.
+
+![](analyse_article_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+
+``` r
+## =========================
+## HEATMAP TOP 20 FAMILIES (100% STABLE)
+## =========================
+
+library(phyloseq)
+library(pheatmap)
+
+# 1) Abondances relatives
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+
+# 2) Agrégation au niveau Family
+ps.family <- tax_glom(ps.rel, taxrank = "Family")
+
+# 3) Top 20 familles
+top20 <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:20]
+ps.family.top <- prune_taxa(top20, ps.family)
+
+# 4) Extraction matrice
+mat <- as(otu_table(ps.family.top), "matrix")
+if (!taxa_are_rows(ps.family.top)) mat <- t(mat)
+
+# 5) FORÇAGE NUMERIQUE ABSOLU
+mat <- matrix(as.numeric(mat),
+              nrow = nrow(mat),
+              ncol = ncol(mat),
+              dimnames = dimnames(mat))
+
+# 6) Nettoyage TOTAL
+mat[!is.finite(mat)] <- 0
+
+# 7) Log-transform
+mat.log <- log10(mat + 1e-6)
+
+# 8) Scaling MANUEL par ligne (clé absolue)
+mat.scaled <- t(scale(t(mat.log)))
+mat.scaled[!is.finite(mat.scaled)] <- 0
+
+# 9) Annotation
+ann <- data.frame(
+  SampleGroup = sample_data(ps.family.top)$SampleGroup
+)
+rownames(ann) <- sample_names(ps.family.top)
+
+# 10) HEATMAP (SANS scale interne)
+pheatmap(mat.scaled,
+         annotation_col = ann,
+         scale = "none",
+         clustering_method = "average",
+         show_colnames = FALSE,
+         fontsize_row = 8,
+         main = "Heatmap - Top 20 families")
+```
+
+![](analyse_article_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->

@@ -5,12 +5,12 @@ date: "2025-12-16"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 ```{r, cache=TRUE}
 library(dada2); packageVersion("dada2")
-
+library(phangorn)
 ```
 ```{r, cache=TRUE}
 # Lire brut
@@ -177,13 +177,7 @@ ps <- phyloseq(
 
 ```
 
-```{r, cache=TRUE}
-dna <- Biostrings::DNAStringSet(taxa_names(ps))
-names(dna) <- taxa_names(ps)
-ps <- merge_phyloseq(ps, dna)
-taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
-ps
-```
+
 ```{r, cache=TRUE}
 samdf$SampleGroup <- ifelse(grepl("^16", samdf$Sample.Name), "Week 16",
                        ifelse(grepl("^8",  samdf$Sample.Name), "Week 8",
@@ -249,28 +243,132 @@ vignette("phyloseq-analysis")
 ```
 
 ```{r, cache=TRUE}
-otufile = system.file("extdata", "GP_otu_table_rand_short.txt.gz", package = "phyloseq")
-mapfile = system.file("extdata", "master_map.txt", package = "phyloseq")
-trefile = system.file("extdata", "GP_tree_rand_short.newick.gz", package = "phyloseq")
-qiimex = import_qiime(otufile, mapfile, trefile, showProgress = FALSE)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+```
+
+
+```{r, cache=TRUE}
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+
+ord.pcoa <- ordinate(ps.rel, method = "PCoA", distance = "bray")
+
+
+plot_ordination(ps.rel, ord.pcoa, color = "SampleGroup") +
+  geom_point(size = 2) +
+  stat_ellipse() +
+  ggtitle("PCoA - Bray-Curtis")
+
+
+
 ```
 ```{r, cache=TRUE}
-qiimex
+library(vegan)
+
+```
+```{r, cache=TRUE}
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+dist.bray <- phyloseq::distance(ps.rel, method = "bray")
+
 ```
 
 ```{r, cache=TRUE}
-mothlist = system.file("extdata", "esophagus.fn.list.gz", package = "phyloseq")
-mothgroup = system.file("extdata", "esophagus.good.groups.gz", package = "phyloseq")
-mothtree = system.file("extdata", "esophagus.tree.gz", package = "phyloseq")
-cutoff = "0.10"
-esophman = import_mothur(mothlist, mothgroup, mothtree, cutoff)
-print(esophman)
+meta <- as(sample_data(ps.rel), "data.frame")
+
+adonis2(dist.bray ~ SampleGroup, data = meta, permutations = 999)
+
 ```
 ```{r, cache=TRUE}
-ntaxa(esophman)
+bd <- betadisper(dist.bray, meta$SampleGroup)
+anova(bd)
+
+```
+PERMANOVA revealed a significant effect of SampleGroup on microbial community composition (Bray–Curtis, R² = 0.42, p = 0.001). However, multivariate dispersion differed significantly among groups (betadisper, p = 0.018), indicating that group differences may partly reflect heterogeneity in within-group variability.
+
+```{r, cache=TRUE}
+boxplot(bd, xlab = "SampleGroup", ylab = "Distance to centroid")
+
+```
+```{r}
+ps.family <- tax_glom(ps.rel, taxrank = "Family")
+top_fam <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:10]
+ps.family.top <- prune_taxa(top_fam, ps.family)
+
+```
+
+```{r}
+site_df <- as.data.frame(ord.pcoa$vectors[, 1:2])
+colnames(site_df) <- c("PCoA1", "PCoA2")
+site_df$SampleGroup <- sample_data(ps.rel)$SampleGroup
+
+
+```
+
+```{r}
+taxa_mat <- t(as(otu_table(ps.family.top), "matrix"))
+
+```
+
+```{r, cache=TRUE}
+plot_heatmap(ps.family.top,
+             sample.label = "SampleGroup",
+             taxa.label = "Family",
+             low = "white",
+             high = "red")
+
 ```
 ```{r, cache=TRUE}
-data(esophagus)
-identical(esophagus, esophman)
+## =========================
+## HEATMAP TOP 20 FAMILIES (100% STABLE)
+## =========================
+
+library(phyloseq)
+library(pheatmap)
+
+# 1) Abondances relatives
+ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
+
+# 2) Agrégation au niveau Family
+ps.family <- tax_glom(ps.rel, taxrank = "Family")
+
+# 3) Top 20 familles
+top20 <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:20]
+ps.family.top <- prune_taxa(top20, ps.family)
+
+# 4) Extraction matrice
+mat <- as(otu_table(ps.family.top), "matrix")
+if (!taxa_are_rows(ps.family.top)) mat <- t(mat)
+
+# 5) FORÇAGE NUMERIQUE ABSOLU
+mat <- matrix(as.numeric(mat),
+              nrow = nrow(mat),
+              ncol = ncol(mat),
+              dimnames = dimnames(mat))
+
+# 6) Nettoyage TOTAL
+mat[!is.finite(mat)] <- 0
+
+# 7) Log-transform
+mat.log <- log10(mat + 1e-6)
+
+# 8) Scaling MANUEL par ligne (clé absolue)
+mat.scaled <- t(scale(t(mat.log)))
+mat.scaled[!is.finite(mat.scaled)] <- 0
+
+# 9) Annotation
+ann <- data.frame(
+  SampleGroup = sample_data(ps.family.top)$SampleGroup
+)
+rownames(ann) <- sample_names(ps.family.top)
+
+# 10) HEATMAP (SANS scale interne)
+pheatmap(mat.scaled,
+         annotation_col = ann,
+         scale = "none",
+         clustering_method = "average",
+         show_colnames = FALSE,
+         fontsize_row = 8,
+         main = "Heatmap - Top 20 families")
+
 ```
+
 
