@@ -1,42 +1,70 @@
-analyse_article
+Analyse critique de l’article Assembly of microbial communities in
+replicate nutrient-cycling model ecosystems follows divergent
+trajectories, leading to alternate stable states, de Pagaling et
+al. (2017)
 ================
 2025-12-16
 
+## 1. INTRODUCTION
+
+L’assemblage des communautés microbiennes est influencé par des
+processus déterministes et stochastiques. Comprendre comment ces
+mécanismes conduisent à des trajectoires de développement divergentes
+reste une question centrale en écologie microbienne. L’article “Assembly
+of microbial communities in replicate nutrient-cycling model ecosystems
+follows divergent trajectories, leading to alternate stable states”, de
+Pagaling et al. (2017) montre que des microcosmes identiques peuvent
+évoluer vers des états communautaires distincts.
+
+Objectifs de cette analyse : 1) Tester si les communautés diffèrent
+entre 8 et 16 semaines 2) Identifier les groupes taxonomiques associés à
+cette divergence
+
+## 2. MATERIEL ET METHODES
+
+# Traitement des séquences
+
+Les séquences 16S rRNA ont été traitées à l’aide du pipeline DADA2,
+incluant le filtrage de qualité, la correction des erreurs, la fusion
+des lectures appariées et l’élimination des séquences chimériques. Ce
+traitement a conduit à une table finale de variants de séquences (ASV).
+
+Les tables d’abondance, la taxonomie et les métadonnées ont ensuite été
+intégrées dans un objet phyloseq, utilisé pour l’ensemble des analyses.
+
+# Analyses statistiques
+
+Les différences de structure communautaire ont été évaluées à l’aide de
+la distance de Bray–Curtis calculée à partir des abondances relatives.
+Les patrons de similarité entre communautés ont été explorés par PCoA.
+La significativité des différences entre groupes a été testée par
+PERMANOVA (adonis2).
+
+## 3. PACKAGES
+
 ``` r
-library(dada2); packageVersion("dada2")
+library(dada2)
+library(phyloseq)
+library(vegan)
+library(ggplot2)
+library(dplyr)
+library(pheatmap)
+library(RColorBrewer)
+vignette("phyloseq-basics")
+vignette("phyloseq-analysis")
 ```
 
-    ## [1] '1.28.0'
+## 4. EXTRACTION DES DONNEES
 
 ``` r
-library(phangorn)
-```
-
-    ## Loading required package: ape
-
-    ## 
-    ## Attaching package: 'ape'
-
-    ## The following object is masked from 'package:Biostrings':
-    ## 
-    ##     complement
-
-``` r
-# Lire brut
 raw <- readLines("/home/rstudio/article_ADM/SraRunTable (2).csv")
-
-# 1. Supprimer les guillemets de début et de fin de ligne
 raw <- gsub('^"|"$', "", raw)
-
-# 2. Remplacer les doubles guillemets "" par un seul "
 raw <- gsub('""', '"', raw)
-
-# Sauver un fichier propre
 writeLines(raw, "/home/rstudio/article_ADM/SraRunTable_clean.csv")
-
-# Relire avec R
 samdf <- read.csv("/home/rstudio/article_ADM/SraRunTable_clean.csv", sep = ",", header = TRUE, quote = "\"", stringsAsFactors = FALSE)
 ```
+
+## 5. PIPELINE DADA2
 
 ``` r
 path <- "~/article_ADM/data" # CHANGE ME to the directory containing the fastq files after unzipping.
@@ -166,11 +194,9 @@ list.files(path)
     ## [121] "SRR2518325_2.fastq.gz"
 
 ``` r
-# List forward and reverse reads
 fnFs <- sort(list.files(path, pattern = "_1\\.fastq\\.gz$", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern = "_2\\.fastq\\.gz$", full.names = TRUE))
 
-# Extract sample names
 sample.names <- sub("_1\\.fastq\\.gz$", "", basename(fnFs))
 ```
 
@@ -178,13 +204,13 @@ sample.names <- sub("_1\\.fastq\\.gz$", "", basename(fnFs))
 plotQualityProfile(fnFs[1:2])
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-5-1.png" alt="" style="display: block; margin: auto;" />
 
 ``` r
 plotQualityProfile(fnRs[1:2])
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-6-1.png" alt="" style="display: block; margin: auto;" />
 
 ``` r
 # Create filtered directory if it doesn't exist
@@ -259,10 +285,7 @@ errR <- learnErrors(filtRs, multithread=TRUE)
 plotErrors(errF, nominalQ=TRUE)
 ```
 
-    ## Warning in scale_y_log10(): log-10 transformation introduced infinite values.
-    ## log-10 transformation introduced infinite values.
-
-![](analyse_article_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-12-1.png" alt="" style="display: block; margin: auto;" />
 
 ``` r
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
@@ -402,128 +425,6 @@ dadaFs[[1]]
 
 ``` r
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
-```
-
-    ## 150982 paired-reads (in 633 unique pairings) successfully merged out of 154886 (in 2124 pairings) input.
-
-    ## 82296 paired-reads (in 452 unique pairings) successfully merged out of 85632 (in 1625 pairings) input.
-
-    ## 120912 paired-reads (in 530 unique pairings) successfully merged out of 124872 (in 1881 pairings) input.
-
-    ## 46291 paired-reads (in 311 unique pairings) successfully merged out of 48393 (in 897 pairings) input.
-
-    ## 65253 paired-reads (in 427 unique pairings) successfully merged out of 68642 (in 1551 pairings) input.
-
-    ## 83133 paired-reads (in 431 unique pairings) successfully merged out of 88685 (in 2080 pairings) input.
-
-    ## 27749 paired-reads (in 248 unique pairings) successfully merged out of 29088 (in 608 pairings) input.
-
-    ## 109025 paired-reads (in 318 unique pairings) successfully merged out of 110877 (in 898 pairings) input.
-
-    ## 99351 paired-reads (in 424 unique pairings) successfully merged out of 102318 (in 1300 pairings) input.
-
-    ## 125812 paired-reads (in 517 unique pairings) successfully merged out of 130615 (in 2090 pairings) input.
-
-    ## 61158 paired-reads (in 353 unique pairings) successfully merged out of 62913 (in 824 pairings) input.
-
-    ## 138971 paired-reads (in 432 unique pairings) successfully merged out of 142295 (in 1488 pairings) input.
-
-    ## 58618 paired-reads (in 453 unique pairings) successfully merged out of 62024 (in 1617 pairings) input.
-
-    ## 89399 paired-reads (in 608 unique pairings) successfully merged out of 94334 (in 2239 pairings) input.
-
-    ## 459253 paired-reads (in 2107 unique pairings) successfully merged out of 483000 (in 9738 pairings) input.
-
-    ## 55883 paired-reads (in 380 unique pairings) successfully merged out of 59662 (in 1601 pairings) input.
-
-    ## 68464 paired-reads (in 503 unique pairings) successfully merged out of 71539 (in 1479 pairings) input.
-
-    ## 63035 paired-reads (in 460 unique pairings) successfully merged out of 65468 (in 1192 pairings) input.
-
-    ## 64686 paired-reads (in 364 unique pairings) successfully merged out of 68490 (in 1576 pairings) input.
-
-    ## 36013 paired-reads (in 378 unique pairings) successfully merged out of 40090 (in 1705 pairings) input.
-
-    ## 91103 paired-reads (in 248 unique pairings) successfully merged out of 92665 (in 659 pairings) input.
-
-    ## 3044 paired-reads (in 61 unique pairings) successfully merged out of 3176 (in 102 pairings) input.
-
-    ## 125305 paired-reads (in 370 unique pairings) successfully merged out of 128292 (in 1127 pairings) input.
-
-    ## 46943 paired-reads (in 319 unique pairings) successfully merged out of 48486 (in 810 pairings) input.
-
-    ## 124990 paired-reads (in 583 unique pairings) successfully merged out of 131422 (in 2596 pairings) input.
-
-    ## 165193 paired-reads (in 358 unique pairings) successfully merged out of 169184 (in 1412 pairings) input.
-
-    ## 91791 paired-reads (in 367 unique pairings) successfully merged out of 94355 (in 1131 pairings) input.
-
-    ## 81224 paired-reads (in 322 unique pairings) successfully merged out of 83707 (in 1106 pairings) input.
-
-    ## 114536 paired-reads (in 568 unique pairings) successfully merged out of 119041 (in 2105 pairings) input.
-
-    ## 81945 paired-reads (in 412 unique pairings) successfully merged out of 85574 (in 1483 pairings) input.
-
-    ## 98957 paired-reads (in 275 unique pairings) successfully merged out of 101420 (in 1101 pairings) input.
-
-    ## 123429 paired-reads (in 514 unique pairings) successfully merged out of 129667 (in 2337 pairings) input.
-
-    ## 73525 paired-reads (in 480 unique pairings) successfully merged out of 77194 (in 1622 pairings) input.
-
-    ## 79354 paired-reads (in 469 unique pairings) successfully merged out of 83309 (in 1723 pairings) input.
-
-    ## 57387 paired-reads (in 437 unique pairings) successfully merged out of 60790 (in 1565 pairings) input.
-
-    ## 48949 paired-reads (in 187 unique pairings) successfully merged out of 49950 (in 483 pairings) input.
-
-    ## 96869 paired-reads (in 336 unique pairings) successfully merged out of 98697 (in 854 pairings) input.
-
-    ## 36743 paired-reads (in 177 unique pairings) successfully merged out of 37246 (in 350 pairings) input.
-
-    ## 41156 paired-reads (in 438 unique pairings) successfully merged out of 43643 (in 1001 pairings) input.
-
-    ## 201052 paired-reads (in 928 unique pairings) successfully merged out of 210540 (in 2802 pairings) input.
-
-    ## 304021 paired-reads (in 1149 unique pairings) successfully merged out of 319535 (in 3325 pairings) input.
-
-    ## 557114 paired-reads (in 1918 unique pairings) successfully merged out of 596306 (in 9453 pairings) input.
-
-    ## 348040 paired-reads (in 1729 unique pairings) successfully merged out of 370509 (in 8257 pairings) input.
-
-    ## 322087 paired-reads (in 1214 unique pairings) successfully merged out of 345347 (in 5543 pairings) input.
-
-    ## 207151 paired-reads (in 1083 unique pairings) successfully merged out of 215602 (in 3542 pairings) input.
-
-    ## 197358 paired-reads (in 877 unique pairings) successfully merged out of 210897 (in 3551 pairings) input.
-
-    ## 1213 paired-reads (in 65 unique pairings) successfully merged out of 1354 (in 100 pairings) input.
-
-    ## 268028 paired-reads (in 1224 unique pairings) successfully merged out of 278238 (in 4598 pairings) input.
-
-    ## 316221 paired-reads (in 1698 unique pairings) successfully merged out of 334844 (in 6614 pairings) input.
-
-    ## 178601 paired-reads (in 1129 unique pairings) successfully merged out of 190531 (in 3952 pairings) input.
-
-    ## 333140 paired-reads (in 2350 unique pairings) successfully merged out of 362508 (in 13921 pairings) input.
-
-    ## 173369 paired-reads (in 1184 unique pairings) successfully merged out of 189116 (in 6179 pairings) input.
-
-    ## 174512 paired-reads (in 990 unique pairings) successfully merged out of 184201 (in 2743 pairings) input.
-
-    ## 275693 paired-reads (in 1411 unique pairings) successfully merged out of 294533 (in 6116 pairings) input.
-
-    ## 106931 paired-reads (in 946 unique pairings) successfully merged out of 114081 (in 3116 pairings) input.
-
-    ## 171716 paired-reads (in 1003 unique pairings) successfully merged out of 182222 (in 2877 pairings) input.
-
-    ## 826039 paired-reads (in 4511 unique pairings) successfully merged out of 881730 (in 17545 pairings) input.
-
-    ## 241018 paired-reads (in 986 unique pairings) successfully merged out of 254714 (in 2855 pairings) input.
-
-    ## 107520 paired-reads (in 554 unique pairings) successfully merged out of 112523 (in 1219 pairings) input.
-
-``` r
-# Inspect the merger data.frame from the first sample
 head(mergers[[1]])
 ```
 
@@ -550,7 +451,6 @@ dim(seqtab)
     ## [1]    59 15345
 
 ``` r
-# Inspect distribution of sequence lengths
 table(nchar(getSequences(seqtab)))
 ```
 
@@ -564,11 +464,6 @@ table(nchar(getSequences(seqtab)))
 
 ``` r
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
-```
-
-    ## Identified 5339 bimeras out of 15345 input sequences.
-
-``` r
 dim(seqtab.nochim)
 ```
 
@@ -583,7 +478,6 @@ sum(seqtab.nochim)/sum(seqtab)
 ``` r
 getN <- function(x) sum(getUniques(x))
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
-# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
 head(track)
@@ -602,7 +496,7 @@ taxa <- assignTaxonomy(seqtab.nochim, "~/article_ADM/data/silva_nr99_v138.2_toGe
 ```
 
 ``` r
-taxa.print <- taxa # Removing sequence rownames for display only
+taxa.print <- taxa 
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
@@ -614,84 +508,13 @@ head(taxa.print)
     ## [4,] "Bacteria" "Bacillota"     "Bacilli"      "Erysipelotrichales"
     ## [5,] "Bacteria" "Spirochaetota" "Spirochaetia" "Spirochaetales"    
     ## [6,] "Bacteria" "Bacteroidota"  "Bacteroidia"  "Bacteroidales"     
-    ##      Family                    Genus               
-    ## [1,] "Chlorobiaceae"           "Chlorobium"        
-    ## [2,] "Oscillospiraceae"        "Saccharofermentans"
-    ## [3,] "Incertae Sedis"          "Hydrogenispora"    
-    ## [4,] "Erysipelotrichaceae"     "Erysipelothrix"    
-    ## [5,] "Spirochaetaceae"         "Teretinema"        
+    ##      Family                    Genus           
+    ## [1,] "Chlorobiaceae"           "Chlorobium"    
+    ## [2,] "Oscillospiraceae"        NA              
+    ## [3,] "Incertae Sedis"          "Hydrogenispora"
+    ## [4,] "Erysipelotrichaceae"     "Erysipelothrix"
+    ## [5,] "Spirochaetaceae"         "Teretinema"    
     ## [6,] "Bacteroidetes vadinHA17" NA
-
-``` r
-library(phyloseq); packageVersion("phyloseq")
-```
-
-    ## [1] '1.44.0'
-
-``` r
-library(Biostrings); packageVersion("Biostrings")
-```
-
-    ## Loading required package: BiocGenerics
-
-    ## 
-    ## Attaching package: 'BiocGenerics'
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     IQR, mad, sd, var, xtabs
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     anyDuplicated, aperm, append, as.data.frame, basename, cbind,
-    ##     colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
-    ##     get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
-    ##     match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
-    ##     Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
-    ##     table, tapply, union, unique, unsplit, which.max, which.min
-
-    ## Loading required package: S4Vectors
-
-    ## Loading required package: stats4
-
-    ## 
-    ## Attaching package: 'S4Vectors'
-
-    ## The following object is masked from 'package:utils':
-    ## 
-    ##     findMatches
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     expand.grid, I, unname
-
-    ## Loading required package: IRanges
-
-    ## 
-    ## Attaching package: 'IRanges'
-
-    ## The following object is masked from 'package:phyloseq':
-    ## 
-    ##     distance
-
-    ## Loading required package: XVector
-
-    ## Loading required package: GenomeInfoDb
-
-    ## 
-    ## Attaching package: 'Biostrings'
-
-    ## The following object is masked from 'package:base':
-    ## 
-    ##     strsplit
-
-    ## [1] '2.68.1'
-
-``` r
-library(ggplot2); packageVersion("ggplot2")
-```
-
-    ## [1] '4.0.1'
 
 ``` r
 theme_set(theme_bw())
@@ -737,15 +560,17 @@ all(rownames(samdf) %in% rownames(seqtab.nochim))
 
     ## [1] TRUE
 
-``` r
-library(phyloseq)
+## 6. CREATION DE L’OBJET PHYLOSEQ
 
+``` r
 ps <- phyloseq(
   otu_table(seqtab.nochim, taxa_are_rows = FALSE),
   sample_data(samdf),
   tax_table(taxa)
 )
 ```
+
+## 7. Création des groupes d’échantillons
 
 ``` r
 samdf$SampleGroup <- ifelse(grepl("^16", samdf$Sample.Name), "Week 16",
@@ -755,144 +580,60 @@ samdf$SampleGroup <- ifelse(grepl("^16", samdf$Sample.Name), "Week 16",
 sample_data(ps) <- samdf
 ```
 
+## 8. TEST D’ALPHA DIVERSITE
+
 ``` r
 plot_richness(ps, measures=c("Shannon", "Simpson"), color="SampleGroup")
 ```
 
-    ## Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
-    ## ℹ Please use tidy evaluation idioms with `aes()`.
-    ## ℹ See also `vignette("ggplot2-in-packages")` for more information.
-    ## ℹ The deprecated feature was likely used in the phyloseq package.
-    ##   Please report the issue at <https://github.com/joey711/phyloseq/issues>.
-    ## This warning is displayed once every 8 hours.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-    ## generated.
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-29-1.png" alt="" style="display: block; margin: auto;" />
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+## 9. TEST DE BETA DIVERSITE (BRAY-CURTIS)
 
 ``` r
-# Transform data to proportions as appropriate for Bray-Curtis distances
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
 
     ## Run 0 stress 0.105359 
-    ## Run 1 stress 0.1052052 
+    ## Run 1 stress 0.1253495 
+    ## Run 2 stress 0.1061354 
+    ## Run 3 stress 0.1062157 
+    ## Run 4 stress 0.1062124 
+    ## Run 5 stress 0.1053075 
     ## ... New best solution
-    ## ... Procrustes: rmse 0.01317008  max resid 0.05396954 
-    ## Run 2 stress 0.1109144 
-    ## Run 3 stress 0.1108424 
-    ## Run 4 stress 0.1051691 
+    ## ... Procrustes: rmse 0.005936755  max resid 0.02818313 
+    ## Run 6 stress 0.1115173 
+    ## Run 7 stress 0.1062157 
+    ## Run 8 stress 0.1052461 
     ## ... New best solution
-    ## ... Procrustes: rmse 0.01063092  max resid 0.04130093 
-    ## Run 5 stress 0.1061354 
-    ## Run 6 stress 0.1052005 
-    ## ... Procrustes: rmse 0.01032059  max resid 0.04175137 
-    ## Run 7 stress 0.1108509 
-    ## Run 8 stress 0.1053072 
-    ## ... Procrustes: rmse 0.008790511  max resid 0.04190017 
-    ## Run 9 stress 0.1050726 
+    ## ... Procrustes: rmse 0.01131588  max resid 0.05281257 
+    ## Run 9 stress 0.1109145 
+    ## Run 10 stress 0.1061354 
+    ## Run 11 stress 0.1109144 
+    ## Run 12 stress 0.1062157 
+    ## Run 13 stress 0.1062157 
+    ## Run 14 stress 0.1108904 
+    ## Run 15 stress 0.1051972 
     ## ... New best solution
-    ## ... Procrustes: rmse 0.004838833  max resid 0.02513952 
-    ## Run 10 stress 0.1109146 
-    ## Run 11 stress 0.1509927 
-    ## Run 12 stress 0.1107722 
-    ## Run 13 stress 0.1062124 
-    ## Run 14 stress 0.1051691 
-    ## ... Procrustes: rmse 0.004827007  max resid 0.02509484 
-    ## Run 15 stress 0.1051717 
-    ## ... Procrustes: rmse 0.005267382  max resid 0.02546937 
-    ## Run 16 stress 0.1061354 
-    ## Run 17 stress 0.1050903 
-    ## ... Procrustes: rmse 0.001304369  max resid 0.007250711 
-    ## ... Similar to previous best
-    ## Run 18 stress 0.1101863 
-    ## Run 19 stress 0.1051471 
-    ## ... Procrustes: rmse 0.003257711  max resid 0.02112667 
-    ## Run 20 stress 0.111377 
-    ## *** Best solution repeated 1 times
+    ## ... Procrustes: rmse 0.004942594  max resid 0.03461872 
+    ## Run 16 stress 0.1113811 
+    ## Run 17 stress 0.1115173 
+    ## Run 18 stress 0.1109144 
+    ## Run 19 stress 0.1053592 
+    ## ... Procrustes: rmse 0.01068824  max resid 0.05018776 
+    ## Run 20 stress 0.105359 
+    ## ... Procrustes: rmse 0.01058587  max resid 0.04910829 
+    ## *** Best solution was not repeated -- monoMDS stopping criteria:
+    ##     20: stress ratio > sratmax
 
 ``` r
 plot_ordination(ps.prop, ord.nmds.bray, color="SampleGroup", title="Bray NMDS")
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-31-1.png" alt="" style="display: block; margin: auto;" />
 
-``` r
-library(phyloseq)
-library(ggplot2)
-# Identify top 20 taxa by total abundance
-top20 <- names(sort(taxa_sums(ps), decreasing = TRUE))[1:20]
-
-# Transform to relative abundance
-ps.prop <- transform_sample_counts(ps, function(x) x / sum(x))
-
-# Keep only top 20 taxa
-ps.top20 <- prune_taxa(top20, ps.prop)
-
-# Bar plot: samples on x-axis, taxa as fill, faceted by SampleGroup
-plot_bar(ps.top20, x = "Run", fill = "Family") +
-  facet_wrap(~SampleGroup, scales = "free_x") +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1),
-    strip.background = element_rect(fill = "grey90")
-  )
-```
-
-![](analyse_article_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
-
-``` r
-library("phyloseq")
-packageVersion("phyloseq")
-```
-
-    ## [1] '1.44.0'
-
-``` r
-library("ggplot2")
-packageVersion("ggplot2")
-```
-
-    ## [1] '4.0.1'
-
-``` r
-library("scales")
-packageVersion("scales")
-```
-
-    ## [1] '1.4.0'
-
-``` r
-library("grid")
-```
-
-    ## 
-    ## Attaching package: 'grid'
-
-    ## The following object is masked from 'package:Biostrings':
-    ## 
-    ##     pattern
-
-``` r
-packageVersion("grid")
-```
-
-    ## [1] '4.3.1'
-
-``` r
-vignette("phyloseq-basics")
-```
-
-    ## starting httpd help server ... done
-
-``` r
-vignette("phyloseq-analysis")
-```
-
-``` r
-taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
-```
+## 10. PCoA
 
 ``` r
 ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
@@ -906,39 +647,22 @@ plot_ordination(ps.rel, ord.pcoa, color = "SampleGroup") +
   ggtitle("PCoA - Bray-Curtis")
 ```
 
-    ## Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
-    ## ℹ Please use tidy evaluation idioms with `aes()`.
-    ## ℹ See also `vignette("ggplot2-in-packages")` for more information.
-    ## ℹ The deprecated feature was likely used in the phyloseq package.
-    ##   Please report the issue at <https://github.com/joey711/phyloseq/issues>.
-    ## This warning is displayed once every 8 hours.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-    ## generated.
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-32-1.png" alt="" style="display: block; margin: auto;" />
+–\> Analyse PCoA basée sur les distances de Bray–Curtis entre
+communautés microbiennes sédimentaires, ainsi qu’à 8 et 16 semaines.
 
-    ## Warning in MASS::cov.trob(data[, vars], wt = weight * nrow(data)): Probable
-    ## convergence failure
+L’analyse en coordonnées principales montre une séparation claire entre
+les communautés microbiennes sédimentaires, celles échantillonnées à 8
+semaines et celles échantillonnées à 16 semaines. Les échantillons de
+même durée d’incubation tendent à se regrouper, indiquant une
+structuration temporelle marquée des communautés.
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
-
-``` r
-library(vegan)
-```
-
-    ## Loading required package: permute
-
-    ## 
-    ## Attaching package: 'vegan'
-
-    ## The following objects are masked from 'package:phangorn':
-    ## 
-    ##     diversity, treedist
+## 11. PERMANOVA
 
 ``` r
 ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
 dist.bray <- phyloseq::distance(ps.rel, method = "bray")
-```
 
-``` r
 meta <- as(sample_data(ps.rel), "data.frame")
 
 adonis2(dist.bray ~ SampleGroup, data = meta, permutations = 999)
@@ -976,93 +700,152 @@ multivariate dispersion differed significantly among groups (betadisper,
 p = 0.018), indicating that group differences may partly reflect
 heterogeneity in within-group variability.
 
+## 12. COMPOSITION TAXONOMIQUE
+
 ``` r
-boxplot(bd, xlab = "SampleGroup", ylab = "Distance to centroid")
+top10 <- names(sort(taxa_sums(ps), decreasing = TRUE))[1:10]
+
+
+ps.prop <- transform_sample_counts(ps, function(x) x / sum(x))
+
+
+ps.top10 <- prune_taxa(top10, ps.prop)
+
+
+plot_bar(ps.top10, x = "Run", fill = "Phylum") +
+  facet_wrap(~SampleGroup, scales = "free_x") +
+  theme_bw() +
+  ylab("Abondance relative") +
+  ggtitle("Phylum bactériens dominants")
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-35-1.png" alt="" style="display: block; margin: auto;" />
 
 ``` r
-ps.family <- tax_glom(ps.rel, taxrank = "Family")
-top_fam <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:10]
-ps.family.top <- prune_taxa(top_fam, ps.family)
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    strip.background = element_rect(fill = "grey90")
+  )
 ```
 
-``` r
-site_df <- as.data.frame(ord.pcoa$vectors[, 1:2])
-colnames(site_df) <- c("PCoA1", "PCoA2")
-site_df$SampleGroup <- sample_data(ps.rel)$SampleGroup
-```
+    ## <theme> List of 2
+    ##  $ axis.text.x     : <ggplot2::element_text>
+    ##   ..@ family       : NULL
+    ##   ..@ face         : NULL
+    ##   ..@ italic       : chr NA
+    ##   ..@ fontweight   : num NA
+    ##   ..@ fontwidth    : num NA
+    ##   ..@ colour       : NULL
+    ##   ..@ size         : NULL
+    ##   ..@ hjust        : num 1
+    ##   ..@ vjust        : NULL
+    ##   ..@ angle        : num 90
+    ##   ..@ lineheight   : NULL
+    ##   ..@ margin       : NULL
+    ##   ..@ debug        : NULL
+    ##   ..@ inherit.blank: logi FALSE
+    ##  $ strip.background: <ggplot2::element_rect>
+    ##   ..@ fill         : chr "grey90"
+    ##   ..@ colour       : NULL
+    ##   ..@ linewidth    : NULL
+    ##   ..@ linetype     : NULL
+    ##   ..@ linejoin     : NULL
+    ##   ..@ inherit.blank: logi FALSE
+    ##  @ complete: logi FALSE
+    ##  @ validate: logi TRUE
+
+## 13. HEATMAP
 
 ``` r
-taxa_mat <- t(as(otu_table(ps.family.top), "matrix"))
-```
-
-``` r
-plot_heatmap(ps.family.top,
-             sample.label = "SampleGroup",
-             taxa.label = "Family",
-             low = "white",
-             high = "red")
-```
-
-    ## Warning in scale_fill_gradient(low = low, high = high, trans = trans, na.value
-    ## = na.value): log-4 transformation introduced infinite values.
-
-![](analyse_article_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
-
-``` r
-## =========================
-## HEATMAP TOP 20 FAMILIES (100% STABLE)
-## =========================
-
-library(phyloseq)
-library(pheatmap)
-
-# 1) Abondances relatives
 ps.rel <- transform_sample_counts(ps, function(x) x / sum(x))
 
-# 2) Agrégation au niveau Family
-ps.family <- tax_glom(ps.rel, taxrank = "Family")
 
-# 3) Top 20 familles
-top20 <- names(sort(taxa_sums(ps.family), decreasing = TRUE))[1:20]
-ps.family.top <- prune_taxa(top20, ps.family)
+ps.phylum <- tax_glom(ps.rel, taxrank = "Phylum")
 
-# 4) Extraction matrice
-mat <- as(otu_table(ps.family.top), "matrix")
-if (!taxa_are_rows(ps.family.top)) mat <- t(mat)
 
-# 5) FORÇAGE NUMERIQUE ABSOLU
+top20 <- names(sort(taxa_sums(ps.phylum), decreasing = TRUE))[1:20]
+ps.phylum.top <- prune_taxa(top20, ps.phylum)
+
+
+mat <- as(otu_table(ps.phylum.top), "matrix")
+if (!taxa_are_rows(ps.phylum.top)) mat <- t(mat)
+
+
 mat <- matrix(as.numeric(mat),
               nrow = nrow(mat),
-              ncol = ncol(mat),
               dimnames = dimnames(mat))
-
-# 6) Nettoyage TOTAL
 mat[!is.finite(mat)] <- 0
 
-# 7) Log-transform
+
 mat.log <- log10(mat + 1e-6)
 
-# 8) Scaling MANUEL par ligne (clé absolue)
-mat.scaled <- t(scale(t(mat.log)))
-mat.scaled[!is.finite(mat.scaled)] <- 0
 
-# 9) Annotation
-ann <- data.frame(
-  SampleGroup = sample_data(ps.family.top)$SampleGroup
+mat.z <- t(scale(t(mat.log)))
+mat.z[!is.finite(mat.z)] <- 0
+
+
+tax <- as(tax_table(ps.phylum.top), "matrix")
+rownames(mat.z) <- tax[, "Phylum"]
+
+
+ann_col <- data.frame(
+  SampleGroup = sample_data(ps.phylum.top)$SampleGroup
 )
-rownames(ann) <- sample_names(ps.family.top)
+rownames(ann_col) <- sample_names(ps.phylum.top)
 
-# 10) HEATMAP (SANS scale interne)
-pheatmap(mat.scaled,
-         annotation_col = ann,
+
+ord <- order(ann_col$SampleGroup)
+mat.z <- mat.z[, ord]
+ann_col <- ann_col[ord, , drop = FALSE]
+
+
+col_fun <- colorRampPalette(rev(brewer.pal(11, "RdBu")))(100)
+
+
+pheatmap(mat.z,
+         annotation_col = ann_col,
+         color = col_fun,
          scale = "none",
          clustering_method = "average",
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
          show_colnames = FALSE,
-         fontsize_row = 8,
-         main = "Heatmap - Top 20 families")
+         fontsize_row = 10,
+         fontsize_col = 8,
+         border_color = NA,
+         main = "Heatmap of the 20 most abundant bacterial phyla\n(Z-score of log-relative abundance)")
 ```
 
-![](analyse_article_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+<img src="analyse_article_files/figure-gfm/unnamed-chunk-36-1.png" alt="" style="display: block; margin: auto;" />
+
+## DISCUSSION
+
+Les résultats obtenus montrent que des communautés microbiennes
+initialement similaires peuvent diverger fortement au cours du temps,
+même lorsqu’elles évoluent dans des conditions environnementales
+contrôlées. La séparation nette observée entre 8 et 16 semaines suggère
+que la dynamique temporelle joue un rôle clé dans l’assemblage des
+communautés.
+
+Ces observations sont cohérentes avec les conclusions de Pagaling et
+al. (2017), qui proposent que des trajectoires alternatives d’assemblage
+puissent émerger à la suite d’une phase initiale de faible diversité. La
+divergence observée pourrait résulter d’effets stochastiques amplifiés
+par des interactions biologiques et des rétroactions fonctionnelles au
+sein des communautés.
+
+Cependant, notre analyse reste volontairement limitée par rapport à
+l’étude originale, qui inclut des approches fonctionnelles et
+métagénomiques plus approfondies. Néanmoins, cette reproduction
+partielle met en évidence l’intérêt des analyses de diversité beta et de
+composition taxonomique pour explorer les mécanismes d’assemblage des
+communautés microbiennes.
+
+## CONCLUSION
+
+Cette analyse montre que la structure des communautés microbiennes
+évolue significativement entre 8 et 16 semaines d’incubation, avec une
+divergence marquée de leur composition. Les résultats soutiennent
+l’hypothèse selon laquelle des communautés microbiennes répliquées
+peuvent suivre des trajectoires de développement distinctes, contribuant
+à la compréhension des états alternatifs en écologie microbienne.

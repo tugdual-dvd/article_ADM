@@ -1,0 +1,106 @@
+---
+title: "Analyse critique de l'article Assembly of microbial communities in replicate nutrient-cycling model ecosystems follows divergent trajectories, leading to alternate stable states, de Pagaling et al. (2017)"
+output: github_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, message = FALSE, warning = FALSE,
+fig.align = "center"
+)
+```
+
+## 1. INTRODUCTION 
+
+
+L’assemblage des communautés microbiennes est influencé par des processus déterministes et stochastiques. Comprendre comment ces mécanismes conduisent à des trajectoires de développement divergentes reste une question centrale en écologie microbienne. L'article "Assembly of microbial communities in replicate nutrient-cycling model ecosystems follows divergent trajectories, leading to alternate stable states", de Pagaling et al. (2017) montre que des microcosmes identiques peuvent évoluer vers des états communautaires distincts.
+
+Objectifs de cette analyse :
+  1) Tester si les communautés diffèrent entre 8 et 16 semaines
+  2) Identifier les groupes taxonomiques associés à cette divergence
+
+## 2. MATERIEL ET METHODES
+
+
+# Traitement des séquences
+
+Les séquences 16S rRNA ont été traitées à l’aide du pipeline DADA2, incluant le filtrage de qualité, la correction des erreurs, la fusion des lectures appariées et l’élimination des séquences chimériques.
+Ce traitement a conduit à une table finale de variants de séquences (ASV).
+
+Les tables d’abondance, la taxonomie et les métadonnées ont ensuite été intégrées dans un objet phyloseq, utilisé pour l’ensemble des analyses.
+
+# Analyses statistiques
+
+Les différences de structure communautaire ont été évaluées à l’aide de la distance de Bray–Curtis calculée à partir des abondances relatives.
+Les patrons de similarité entre communautés ont été explorés par PCoA.
+La significativité des différences entre groupes a été testée par PERMANOVA
+(adonis2).
+
+## 3. PACKAGES
+
+```{r}
+library(dada2)
+library(phyloseq)
+library(vegan)
+library(ggplot2)
+library(dplyr)
+```
+
+## 4. EXTRACTION DES DONNEES
+
+```{r}
+raw <- readLines("/home/rstudio/article_ADM/SraRunTable (2).csv")
+
+raw <- gsub('^"|"$', "", raw)
+
+raw <- gsub('""', '"', raw)
+
+writeLines(raw, "/home/rstudio/article_ADM/SraRunTable_clean.csv")
+
+samdf <- read.csv("/home/rstudio/article_ADM/SraRunTable_clean.csv", sep = ",", header = TRUE, quote = "\"")
+```
+
+
+## 5. PIPELINE DADA2
+
+```{r}
+path <- "~/article_ADM/data" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+
+# Lister forward and reverse reads
+fnFs <- sort(list.files(path, pattern = "_1\\.fastq\\.gz$", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern = "_2\\.fastq\\.gz$", full.names = TRUE))
+
+# Extraire sample names
+sample.names <- sub("_1\\.fastq\\.gz$", "", basename(fnFs))
+```
+```{r}
+plotQualityProfile(fnFs[1:2])
+```
+
+```{r}
+plotQualityProfile(fnRs[1:2])
+```
+
+```{r}
+filt_path <- file.path(path, "filtered")
+dir.create(filt_path, showWarnings = FALSE)
+
+
+filtFs <- file.path(filt_path, paste0(sample.names, "_1_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_2_filt.fastq.gz"))
+
+
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+head(fnFs)
+head(filtFs)
+```
+
+```{r}
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+              compress=TRUE, multithread=FALSE) 
+head(out)
+```
+
