@@ -33,7 +33,7 @@ diversité bêta, états stables alternatifs
 
 ---
 
-[← Retour à l’accueil](Analyse_article_ADM/index.md)
+[← Retour à l’accueil](../index.md)
 
 ---
 
