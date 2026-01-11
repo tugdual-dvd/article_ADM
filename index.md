@@ -5,7 +5,7 @@ title: Accueil
 
 # Analyse de communautés microbiennes
 
-[Analyse de l’article](analyse_article.md)
+[Analyse de l’article](script/analyse_article.md) 
 
 ---
 
