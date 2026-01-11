@@ -1,3 +1,42 @@
+---
+layout: default
+title: "Analyse critique de l’assemblage des communautés microbiennes"
+description: "Analyse bioinformatique et écologique inspirée de Pagaling et al. (2017)"
+---
+
+# Analyse critique de l’assemblage des communautés microbiennes
+
+**Article analysé :**  
+Pagaling E., Wang H., Venables M. et al. (2017)  
+*Assembly of microbial communities in replicate nutrient-cycling model ecosystems follows divergent trajectories, leading to alternate stable states*  
+_Environmental Microbiology_
+
+**Auteur :** Tugdual DEVEAUD  
+**Affiliation :** Master 1 MFA, UBO Brest  
+**Encadrant :** Loïs Maignien  
+**Date :** Décembre 2026
+
+---
+
+## Résumé
+
+L’assemblage des communautés microbiennes résulte de l’interaction entre processus
+déterministes et stochastiques. À partir des données de séquençage 16S rRNA issues de
+l’étude de Pagaling et al. (2017), cette analyse vise à reproduire et discuter les
+principaux résultats concernant la divergence temporelle des communautés microbiennes
+dans des microcosmes expérimentaux. Les analyses de diversité alpha et bêta, de
+composition taxonomique et de structuration multivariée mettent en évidence
+l’émergence d’états communautaires alternatifs au cours du temps.
+
+**Mots-clés :** microbiologie environnementale, 16S rRNA, DADA2, phyloseq, PERMANOVA,
+diversité bêta, états stables alternatifs
+
+---
+
+[← Retour à l’accueil](index.md)
+
+---
+
 Analyse bioinformatique de l’article Assembly of microbial communities in
 replicate nutrient-cycling model ecosystems follows divergent
 trajectories, leading to alternate stable states, de Pagaling et
