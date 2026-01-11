@@ -24,13 +24,14 @@ cette divergence
 
 # Traitement des séquences
 
-Les séquences 16S rRNA ont été traitées à l’aide du pipeline DADA2,
-incluant le filtrage de qualité, la correction des erreurs, la fusion
-des lectures appariées et l’élimination des séquences chimériques. Ce
-traitement a conduit à une table finale de variants de séquences (ASV).
+Les séquences 16S rRNA ont été traitées à l’aide du pipeline DADA2
+(Callahan et al., 2016), incluant le filtrage de qualité, la correction
+des erreurs de séquençage, la fusion des lectures appariées et
+l’élimination des séquences chimériques.
 
-Les tables d’abondance, la taxonomie et les métadonnées ont ensuite été
-intégrées dans un objet phyloseq, utilisé pour l’ensemble des analyses.
+Les tables d’abondance des ASV, la taxonomie assignée à l’aide de la base
+SILVA, ainsi que les métadonnées associées ont été intégrées dans un
+objet phyloseq, utilisé pour l’ensemble des analyses statistiques.
 
 # Analyses statistiques
 
@@ -588,6 +589,11 @@ plot_richness(ps, measures=c("Shannon", "Simpson"), color="SampleGroup")
 
 <img src="analyse_article_files/figure-gfm/unnamed-chunk-29-1.png" alt="" style="display: block; margin: auto;" />
 
+Les indices de Shannon et Simpson suggèrent des différences de diversité
+alpha entre les groupes d’échantillons, avec une tendance à une
+diversification accrue au cours du temps, bien que ces différences
+restent modérées comparées aux variations observées en diversité beta.
+
 ## 9. TEST DE BETA DIVERSITE (BRAY-CURTIS)
 
 ``` r
@@ -694,11 +700,10 @@ anova(bd)
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-PERMANOVA revealed a significant effect of SampleGroup on microbial
-community composition (Bray–Curtis, R² = 0.42, p = 0.001). However,
-multivariate dispersion differed significantly among groups (betadisper,
-p = 0.018), indicating that group differences may partly reflect
-heterogeneity in within-group variability.
+La PERMANOVA a mis en évidence un effet significatif du facteur SampleGroup sur la structure des communautés microbiennes (Bray–Curtis, R² = 0,42, p = 0,001). Néanmoins, une différence significative de dispersion multivariée a également été observée entre les groupes (betadisper, p = 0,018), suggérant que l’effet détecté pourrait être partiellement influencé par une hétérogénéité de la variabilité au sein des groupes.
+La significativité de la PERMANOVA doit être interprétée avec prudence,
+car les différences observées entre groupes peuvent être partiellement
+attribuées à une hétérogénéité de dispersion intra-groupe.
 
 ## 12. COMPOSITION TAXONOMIQUE
 
@@ -753,6 +758,10 @@ plot_bar(ps.top10, x = "Run", fill = "Phylum") +
     ##   ..@ inherit.blank: logi FALSE
     ##  @ complete: logi FALSE
     ##  @ validate: logi TRUE
+
+Les analyses de composition taxonomique ont été réalisées au niveau du
+phylum afin de mettre en évidence les grandes tendances structurelles
+des communautés.
 
 ## 13. HEATMAP
 
@@ -817,6 +826,10 @@ pheatmap(mat.z,
 ```
 
 <img src="analyse_article_files/figure-gfm/unnamed-chunk-36-1.png" alt="" style="display: block; margin: auto;" />
+
+La heatmap met en évidence des profils taxonomiques distincts selon les
+groupes d’échantillons, confirmant les différences observées dans les
+analyses de diversité beta.
 
 ## DISCUSSION
 
