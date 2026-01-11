@@ -1,36 +1,27 @@
 title: "Analyse de communautés microbiennes"
 description: "Analyse reproductible de communautés microbiennes basée sur Pagaling et al. (2017)"
 author: "Tugdual DEVEAUD"
-email: "tugdualdeveaud@gmail.com"
 
 theme: jekyll-theme-cayman
 
-# GitHub Pages
 markdown: kramdown
 highlighter: rouge
 
-# Affichage
-show_excerpts: false
+lang: fr
+timezone: Europe/Paris
 
-# Navigation principale
+# Navigation
 header_pages:
   - index.md
   - analyse_article.md
 
-# Plugins autorisés par GitHub Pages
+# Plugins autorisés
 plugins:
-  - jekyll-feed
   - jekyll-seo-tag
 
-# Options générales
-lang: fr
-timezone: Europe/Paris
-
-# Fichiers exclus du site
+# Exclusions
 exclude:
-  - README.md
   - "*.Rmd"
   - "*.Rproj"
   - ".Rhistory"
   - ".gitignore"
-
