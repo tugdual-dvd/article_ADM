@@ -1,22 +1,23 @@
 ---
-layout: page
+layout: default
 title: Accueil
 ---
 
-## Analyse de communautés microbiennes
+# Analyse de communautés microbiennes
 
-Ce site présente une analyse reproductible inspirée de l’article :
+[Analyse de l’article](analyse_article.md)
 
-**Pagaling et al. (2017) – Environmental Microbiology**  
-*Assembly of microbial communities in replicate nutrient-cycling model ecosystems*
+---
 
-### Contenu
-- Pipeline **DADA2** (qualité, ASV)
-- Construction de l’objet **phyloseq**
-- Analyses de diversité alpha et beta
+Ce site présente une analyse reproductible inspirée de :
+
+**Pagaling et al. (2017) – Environmental Microbiology**
+
+## Contenu
+- Pipeline **DADA2**
+- Objet **phyloseq**
+- Analyses de diversité
 - Ordinations (PCoA, NMDS)
-- Visualisations (barplots, heatmaps)
-- Interprétation écologique des résultats
+- Visualisations écologiques
 
-👉 Consultez l’onglet **Analyse** pour les résultats détaillés.
-
+👉 Consultez la page **Analyse de l’article** pour les résultats détaillés.
