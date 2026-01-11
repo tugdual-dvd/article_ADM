@@ -56,10 +56,8 @@ Pagaling et al. (2017) montre que des microcosmes identiques peuvent
 évoluer vers des états communautaires distincts.
 
 Objectifs de cette analyse : 
-1) Tester si les communautés diffèrent
-entre 8 et 16 semaines
-2) Identifier les groupes taxonomiques associés à
-cette divergence
+1) Tester si les communautés diffèrent entre 8 et 16 semaines
+2) Identifier les groupes taxonomiques associés à cette divergence
 
 ## 2. MATERIEL ET METHODES
 
