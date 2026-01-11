@@ -5,7 +5,7 @@ title: Analyses Bioinformatiques, par Tugdual Deveaud
 
 # Analyse de communautés microbiennes
 
-[Analyse de l’article](script/analyse_article.md) 
+Cliquez ici -> [Analyse de l’article](script/analyse_article.md) 
 
 ---
 
@@ -20,4 +20,3 @@ Ce site présente une analyse reproductible inspirée de :
 - Ordinations (PCoA, NMDS)
 - Visualisations écologiques
 
-👉 Consultez la page **Analyse de l’article** pour les résultats détaillés.
