@@ -1,4 +1,4 @@
-Analyse critique de l’article Assembly of microbial communities in
+Analyse bioinformatique de l’article Assembly of microbial communities in
 replicate nutrient-cycling model ecosystems follows divergent
 trajectories, leading to alternate stable states, de Pagaling et
 al. (2017)
