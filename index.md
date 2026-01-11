@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Accueil
+title: Analyses Bioinformatiques, par Tugdual Deveaud
 ---
 
 # Analyse de communautés microbiennes
