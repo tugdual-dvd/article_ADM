@@ -648,7 +648,7 @@ plot_ordination(ps.rel, ord.pcoa, color = "SampleGroup") +
 ```
 
 <img src="analyse_article_files/figure-gfm/unnamed-chunk-32-1.png" alt="" style="display: block; margin: auto;" />
-–\> Analyse PCoA basée sur les distances de Bray–Curtis entre
+–> Analyse PCoA basée sur les distances de Bray–Curtis entre
 communautés microbiennes sédimentaires, ainsi qu’à 8 et 16 semaines.
 
 L’analyse en coordonnées principales montre une séparation claire entre
