@@ -108,7 +108,7 @@ samdf <- read.csv("/home/rstudio/article_ADM/SraRunTable_clean.csv", sep = ",", 
 ## 5. PIPELINE DADA2
 
 ``` r
-path <- "~/article_ADM/data" # CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "~/article_ADM/data" 
 list.files(path)
 ```
 
@@ -254,15 +254,15 @@ plotQualityProfile(fnRs[1:2])
 <img src="analyse_article_files/figure-gfm/unnamed-chunk-6-1.png" alt="" style="display: block; margin: auto;" />
 
 ``` r
-# Create filtered directory if it doesn't exist
+
 filt_path <- file.path(path, "filtered")
 dir.create(filt_path, showWarnings = FALSE)
 
-# Define filtered file names
+
 filtFs <- file.path(filt_path, paste0(sample.names, "_1_filt.fastq.gz"))
 filtRs <- file.path(filt_path, paste0(sample.names, "_2_filt.fastq.gz"))
 
-# Name the vectors (important for DADA2)
+
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 ```
@@ -298,7 +298,7 @@ head(filtFs)
 ``` r
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
-              compress=TRUE, multithread=FALSE) # On Windows set multithread=FALSE (only needed for filterAndTrim)
+              compress=TRUE, multithread=FALSE) 
 head(out)
 ```
 
@@ -589,7 +589,7 @@ samdf <- samdf[common.samples, , drop = FALSE]
 ```
 
 ``` r
-# Check sample name matching
+
 all(rownames(seqtab.nochim) %in% rownames(samdf))
 ```
 
