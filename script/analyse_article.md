@@ -14,7 +14,7 @@ _Environmental Microbiology_
 **Auteur :** Tugdual DEVEAUD  
 **Affiliation :** Master 1 MFA, UBO Brest  
 **Encadrant :** Loïs Maignien  
-**Date :** Décembre 2026
+**Date :** Décembre 2025
 
 ---
 
